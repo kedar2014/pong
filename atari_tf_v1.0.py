@@ -109,7 +109,7 @@ with tf.Session() as sess:
     saver = tf.train.Saver({"W1":tf.trainable_variables()[0],"W2":tf.trainable_variables()[1],"global_step":global_step})  
     
     if resume:
-        saver.restore(sess,'/Users/bardek01/innovation/tensorflow/runs/rl/v1.4/atari_test.ckpt')
+        saver.restore(sess,logs_path + '/atari_test.ckpt')
         episode_number = global_step.eval()
   
     while True:
