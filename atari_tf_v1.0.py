@@ -14,7 +14,7 @@ render = True
 train = False
 D = 6400
 episode_number = 0
-logs_path = '/Users/bardek01/innovation/tensorflow/runs/rl/v1.4'
+logs_path = '/Users/bardek01/Personal/projects/pong/model'
 
 env = gym.make("Pong-v0")
 observation = env.reset()
@@ -52,10 +52,7 @@ def discount_rewards(r):
     discounted_r[t] = running_add
   return discounted_r                            
 
- #variable tensors
 
-
-#if not resume:
 with tf.name_scope('Model'):
     input_nn = tf.convert_to_tensor(input_x)
     #W1 = tf.get_variable(name="W1",shape=H,dtype=tf.float32)
@@ -81,7 +78,6 @@ with tf.name_scope('Model'):
     tf.summary.histogram("Weights_SecondLayer",tf.trainable_variables()[1])    
 
     action_op = tf.multinomial(logits = tf.reshape(output,shape = (1,3)),num_samples=1,name='action_sampler')
-    #action_op = tf.arg_max(tf.reshape(output,shape = (1,3)),1,name='action_sampler')
 
 with tf.name_scope('Training'):
     cross_entropies = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=actions,logits=output)
@@ -91,6 +87,7 @@ with tf.name_scope('Training'):
    
     tf.summary.scalar('Loss',loss)
     
+    #### Had tried various training functions, RMSProp worked the best
     #optimizer = tf.train.RMSPropOptimizer(learning_rate = lr_rate,decay=decay_rate,momentum=0.3,epsilon=1e-10)
     optimizer = tf.train.RMSPropOptimizer(learning_rate=lr_rate,decay=decay_rate,momentum=0.3,epsilon=1e-10, name = 'RMSProp')
     #optimizer = tf.train.GradientDescentOptimizer(learning_rate=lr_rate,name = 'GradientDescent')
@@ -98,7 +95,7 @@ with tf.name_scope('Training'):
 
     grads_and_vars = optimizer.compute_gradients(loss,var_list=tf.trainable_variables())
     train_op = optimizer.apply_gradients(grads_and_vars)
-    #train_op = optimizer.minimize(loss,name='trainingOp')
+  
 
 global_step = tf.Variable(0, name='global_step', trainable=False)
 init = tf.global_variables_initializer()
@@ -123,7 +120,7 @@ with tf.Session() as sess:
         x = cur_x - prev_x if prev_x is not None else np.zeros(D)
         prev_x = cur_x
 
-        #sess = tf_debug.LocalCLIDebugWrapperSession(sess)
+        #sess = tf_debug.LocalCLIDebugWrapperSession(sess) - For debugging the session
         action = sess.run(action_op, feed_dict={input_x : [x]})
         
         observations_input.append(x)
@@ -149,13 +146,13 @@ with tf.Session() as sess:
                 _, s,loss_val = sess.run([train_op,merged_summary,loss],feed_dict={input_x : observations_input,actions: py_labels,rewards: reward_list_discounted})
                 print 'episode number :- ', episode_number
                 print 'loss:-', loss_val
-                #print 'grads:-', sess.run(grads_and_vars,feed_dict={input_x : observations_input,actions: py_labels,rewards: reward_list_discounted})
+                
                                 
                 writer.add_summary(s,global_step=episode_number)
                 writer.flush()
                 global_step_op = tf.assign(global_step, episode_number)
                 sess.run(global_step_op)
-                saver.save(sess, '/Users/bardek01/innovation/tensorflow/runs/rl/v1.4/atari_test.ckpt', global_step=None,write_meta_graph=True)
+                saver.save(sess, logs_path + '/atari_test.ckpt', global_step=None,write_meta_graph=True)
                 reward_list,py_labels,observations_input,reward_list_discounted = [],[],[],[]
 
         
